@@ -5,6 +5,8 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_tavily import TavilySearch
 from tavily import TavilyClient
+from typing import List
+from pydantic import BaseModel, Field
 
 load_dotenv()  # Replace with your actual Tavily API key
 
@@ -26,9 +28,25 @@ def search(query: str) -> str:
     return tavily.search(query=query)
 
 
+class Source(BaseModel):
+    """Schema for a source used by agent"""
+
+    url: str = Field(description="The URL of the source")
+
+
+class AgentResponse(BaseModel):
+    """Schema for the agent response"""
+
+    answer: str = Field(description="The answer from the agent")
+    sources: List[Source] = Field(
+        default_factory=list,
+        description="A list of sources used to generate the answer",
+    )
+
+
 llm = ChatGoogleGenerativeAI(model="gemini-3.8-flash")
 tools = [search]
-agent = create_agent(model=llm, tools=tools)
+agent = create_agent(model=llm, tools=tools, response_format=AgentResponse)
 
 
 def main() -> None:
